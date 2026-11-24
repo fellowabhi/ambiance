@@ -1,0 +1,133 @@
+# ambiance configuration
+#
+# Copy to ~/.config/ambiance/config.toml (or $XDG_CONFIG_HOME/ambiance/config.toml).
+# Every key is optional: anything you leave out keeps the default shown here. Unknown keys
+# are rejected with an error naming them, so typos don't silently do nothing.
+# Colours accept a name (warm, white, red, orange, teal, ...), "#rrggbb", "r,g,b" or [r, g, b].
+
+[device]
+# Physical key layout of the keyboard: "tkl-ansi" or "tkl-iso".
+layout = "tkl-ansi"
+# Seconds between scans for the keyboard while it is absent (asleep, off, out of range).
+# Bluetooth reconnects create a new /dev/hidrawN, so the device is always re-discovered.
+rescan_interval = 2.0
+# Seconds between checks that we still own the lighting. After deep sleep, a power cycle
+# or a reconnect the keyboard reverts to its onboard effect and must be re-claimed.
+verify_interval = 30.0
+# Hand the lighting back to the keyboard's own (onboard) effect when ambiance stops.
+release_on_exit = true
+# Keyboard light level 0..1 (software).
+brightness = 1.0
+# Let scenes move on the keyboard (album pan / gradient drift, see [director.album]).
+animate = true
+
+[led]
+# How screen colours are turned into LED drive values (see src/ambiance/led.py).
+# Per-channel gain [r, g, b]; only the ratios matter. The blue die dominates "white" on
+# most RGB LEDs, so it is turned down.
+white_balance = [1.0, 0.82, 0.62]
+# Chroma boost in OKLCH; album colours are often muted and look washed out on LEDs.
+vibrance = 1.3
+# LED level (0..1) for the darkest colours, so dark album colours still read as colour.
+min_level = 0.3
+# LED level (0..1) for the lightest colours.
+max_level = 1.0
+
+[strip]
+# An ELK-BLEDOM / MELK Bluetooth LED strip (the controllers the "Lotus Lamp X" app drives).
+# It shows one colour at a time: the cover's top-ranked palette colour.
+enabled = true
+# Bluetooth address, e.g. "AA:BB:CC:DD:EE:FF". Empty: the first device whose name starts
+# with one of name_prefixes. Close the phone app: these controllers take one connection.
+address = ""
+name_prefixes = ["MELK-", "ELK-", "LEDBLE"]
+# Colour writes per second. ~30/s are accepted but arrive in visible bursts over BLE.
+max_rate_hz = 12.0
+# Seconds to fade between the engine's keyframes (the strip can fade smoothly).
+smoothing_s = 0.3
+# Colour to show when ambiance lets go (no music, shutdown). Empty: keep the last colour.
+release_color = ""
+# Switch the strip off when the daemon exits.
+power_off_on_exit = false
+# Light level 0..1 (software). A room light easily overpowers the keyboard.
+brightness = 0.6
+# true: cycle through the cover's colours (see director.album.strip_cycle_s); false: static.
+animate = false
+# Controller brightness (0-100) set on every connect, like the app's slider. 0 = leave it.
+hw_brightness = 100
+
+[strip.led]
+# The strip's own colour calibration; same meaning as [led] above. A room light should stay
+# bright, so dark cover colours keep their hue at >= 75% level.
+white_balance = [1.0, 0.82, 0.62]
+vibrance = 1.3
+min_level = 0.75
+max_level = 1.0
+
+[mouse]
+# A Logitech mouse with zone lighting (e.g. G502 HERO). Its G logo gets the cover's top
+# colour; the profile (DPI, buttons) is never touched, and its own effect returns on exit.
+enabled = true
+brightness = 1.0
+animate = false
+
+[media]
+# MPRIS player names (prefixes) to follow, most preferred first. A playing player beats
+# a paused one; preference breaks ties. Examples: "spotify", "firefox", "chromium", "vlc".
+prefer = ["spotify"]
+# Players (prefixes) never followed, e.g. ["chromium"] to ignore browser videos.
+ignore = []
+
+[director]
+# Rules, highest priority first:
+#   1. screen locked, or idle for idle_off_s           -> when_idle
+#   2. a track is Playing / Paused with cover art      -> album lighting at playing/paused level
+#   3. otherwise                                       -> when_no_media
+#
+# Seconds without keyboard/mouse input before the idle behaviour kicks in (0 disables;
+# locking the screen always counts as idle).
+idle_off_s = 300.0
+# Brightness multipliers (0..1) applied to the LED drive values, i.e. linear light:
+# 0.35 looks roughly 70 % as bright.
+playing_level = 1.0
+paused_level = 0.35
+# "off": fade to black but keep control. While the host holds the lighting the keyboard
+#        never dims or sleeps its LEDs by itself, so black is what saves the battery.
+# "release": fade out, then hand the lighting back to the keyboard's onboard effect.
+when_idle = "off"
+# What to show when nothing with cover art is playing: "release" (onboard effect),
+# "solid" (fallback_color at playing_level) or "off" (black, keep control).
+when_no_media = "release"
+fallback_color = "warm"         # = 255,150,60
+# Transition (crossfade) durations in seconds.
+track_transition_s = 1.5     # new track, or back to playing
+pause_transition_s = 1.0     # playing -> paused
+idle_transition_s = 2.0      # fade to off / out before release when idle
+no_media_transition_s = 2.0  # fade into the no-media behaviour
+
+[director.album]
+# "gradient": the cover's palette as a smooth gradient across the keyboard.
+# "mosaic":   the cover itself projected onto the keys.
+style = "gradient"
+# Maximum number of distinct colours. Every distinct colour costs Bluetooth HID++ writes
+# (~47 ms each), so fewer colours = faster, smoother updates.
+steps = 10
+# Gradient direction in degrees; 0 runs left to right, 90 top to bottom.
+angle_deg = 15.0
+# > 0: the keyboard moves, once per this many seconds: the gradient drifts back and forth,
+# or (mosaic) the view pans slowly across the cover. 0 = static.
+drift_period_s = 0.0
+# Mosaic only: share of the (square) cover's height, as a centred horizontal band, that is
+# mapped onto the (about 2.9:1) keyboard. 0.34 is an undistorted crop; 1.0 squashes the
+# whole cover.
+band = 0.5
+# Mosaic with movement: share of the cover's width in view, leaving room to pan.
+zoom = 0.8
+# > 0: one-colour lights (the strip) cycle through the cover's distinct colours, holding
+# each and crossfading to the next, this many seconds per colour. 0 = the top colour.
+strip_cycle_s = 0.0
+
+[engine]
+# Frames per second while transitioning or animating. The keyboard paints 1-2 full
+# frames per second over Bluetooth and always shows the newest one, so a few Hz is plenty.
+tick_hz = 4.0

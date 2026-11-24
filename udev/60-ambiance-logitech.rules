@@ -1,0 +1,27 @@
+# ambiance — let the logged-in desktop user talk HID++ to Logitech devices
+# (needed to control keyboard RGB without root).
+#
+# Install:
+#   sudo install -m 0644 udev/60-ambiance-logitech.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger --subsystem-match=hidraw --action=change
+#
+# Must sort before 73-seat-late.rules, which turns TAG+="uaccess" into an ACL.
+
+ACTION=="remove", GOTO="ambiance_logitech_end"
+SUBSYSTEM!="hidraw", GOTO="ambiance_logitech_end"
+
+# Bluetooth-connected Logitech devices (bus 0005), e.g. G515 LS TKL = 046D:B389
+KERNELS=="0005:046D:*", GOTO="ambiance_logitech_apply"
+
+# USB-connected Logitech devices and LIGHTSPEED receivers (cable / dongle)
+ATTRS{idVendor}=="046d", GOTO="ambiance_logitech_apply"
+
+GOTO="ambiance_logitech_end"
+
+LABEL="ambiance_logitech_apply"
+# Active local session user gets an ACL; plugdev members get group access
+# (useful for SSH / non-seat sessions).
+TAG+="uaccess", MODE="0660", GROUP="plugdev"
+
+LABEL="ambiance_logitech_end"

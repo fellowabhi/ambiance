@@ -1,0 +1,9 @@
+.venv/
+.venvs/
+.ambiance/
+__pycache__/
+*.pyc
+.pytest_cache/
+third_party/
+config.toml
+*.egg-info/

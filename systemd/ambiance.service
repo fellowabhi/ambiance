@@ -1,0 +1,16 @@
+[Unit]
+Description=ambiance - ambient lighting that follows what you're playing
+Documentation=file://%h/projects/ambiance/README.md
+After=graphical-session.target bluetooth.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/projects/ambiance/.venv/bin/python -m ambiance run
+Restart=on-failure
+RestartSec=5
+# SIGTERM makes ambiance fade out and hand the keyboard back to its own lighting.
+TimeoutStopSec=15
+
+[Install]
+WantedBy=graphical-session.target
